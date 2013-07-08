@@ -1,4 +1,4 @@
-var GAME_FPS = 30;
+var GAME_FPS = 60;
 var frameNumber = 0;
 var lastRender = 0;
 var events = [];

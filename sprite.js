@@ -38,6 +38,51 @@ TextSprite.prototype.render = function(canvas) {
 	});
 };
 
+function Arc(x, y, r, fillStyle, strokeStyle, strokeWidth) {
+	Sprite.apply(this, arguments);
+	this.r = r;
+	this.fillStyle = fillStyle;
+	this.strokeStyle = strokeStyle;
+	this.strokeWidth = strokeWidth;
+	this.mapPoints();
+}
+Arc.prototype = Object.create(Sprite.prototype);
+
+Arc.prototype.mapPoints = function() {
+	this.minX = this.x - this.r;
+	this.maxX = this.x + this.r;
+	this.minY = this.y - this.r;
+	this.maxY = this.y + this.r;
+};
+
+Arc.prototype.render = function(canvas) {
+	$(canvas).drawEllipse({
+		x: this.x,
+		y: this.y,
+		width: this.r / 2,
+		height: this.r / 2,
+		fillStyle: this.fillStyle,
+		strokeStyle: this.strokeStyle,
+		strokeWidth: this.strokeWidth
+	});
+};
+
+Arc.prototype.handleEvent = function(event, fps) {
+	switch(event) {
+	case 'nextFrame':
+
+		// move point over once wrapping is completed
+		if (this.maxY < 0 || this.minY > gameHeight) {
+			this.y = (this.y > 0) ? this.y - gameHeight : gameHeight + this.y;
+		}
+		if (this.maxX < 0 || this.minX > gameWidth) {
+			this.x = (this.x > 0) ? this.x - gameWidth : gameWidth + this.x;
+		}
+
+		break;
+	}
+};
+
 function Line(strokeStyle, strokeWidth, closed, points) {
 	this.strokeStyle = strokeStyle;
 	this.strokeWidth = strokeWidth;
@@ -57,6 +102,7 @@ Line.prototype.mapPoints = function() {
 	this.maxX = Math.max.apply(Math, _.map(this.points, function(x) { return x[0]; }));
 	this.minY = Math.min.apply(Math, _.map(this.points, function(x) { return x[1]; }));
 	this.maxY = Math.max.apply(Math, _.map(this.points, function(x) { return x[1]; }));
+
 	this.height = this.maxY - this.minY;
 	this.width = this.maxX - this.minX;
 
@@ -70,13 +116,17 @@ Line.prototype.handleEvent = function(event, fps) {
 		if (this.maxY < 0 || this.minY > gameHeight) {
 			this.points = _.map(this.points,
 								function(x) {
-									return [x[0], Math.abs(gameHeight - x[1])];
+									var newY = (x[1] > 0) ? x[1] - gameHeight :
+											gameHeight + x[1];
+									return [x[0], newY];
 								});
 		}
 		if (this.maxX < 0 || this.minX > gameWidth) {
 			this.points = _.map(this.points,
 								function(x) {
-									return [Math.abs(gameWidth - x[0]), x[1]];
+									var newX = (x[0] > 0) ? x[0] - gameWidth :
+											gameWidth + x[0];
+									return [newX, x[1]];
 								});
 		}
 

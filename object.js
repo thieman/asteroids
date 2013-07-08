@@ -61,9 +61,11 @@ function Ship() {
 	this.rotation = 270; // direction ship is pointing in degrees
 	this.vector = 0; // direction of ship's movement in degrees
 	this.currentSpeed = 0; // current speed in pixels per second
-	this.topSpeed = 200; // top speed in pixels per second
+	this.topSpeed = 150; // top speed in pixels per second
+	this.bulletSpeed = 500; // bullet speed in pixels per second
 	this.acceleration = 0.8; // seconds to reach max speed, linear accel
 	this.rotateSpeed = 2; // total seconds to do a 360
+	this.firingRate = 60; // maximum bullets per minute
 }
 
 Ship.prototype = Object.create(Line.prototype);
@@ -161,5 +163,45 @@ Ship.prototype.handleEvent = function(event, fps) {
 		this.mapPoints();
 		break;
 
+	case 'SPACEBAR':
+
+		// fire a goddamn space bullet into goddamn space
+		var bullet = new Bullet(this.points[1][0], this.points[1][1],
+								10, '#FFF', '#FFF', 0,
+								this.rotation, this.bulletSpeed);
+		sprites.push(bullet);
+		break;
+
 	}
+};
+
+function Bullet(x, y, r, fillStyle, strokeStyle, strokeWidth, vector, speed, maxFrames) {
+	Arc.apply(this, arguments);
+	this.vector = vector;
+	this.speed = speed;
+	this.maxFrames = maxFrames;
+	this.frames = 0;
 }
+
+Bullet.prototype = Object.create(Arc.prototype);
+
+Bullet.prototype.handleEvent = function(event, fps) {
+	switch(event) {
+	case 'nextFrame':
+
+		this.x += (this.speed / fps) * Math.cos(this.vector * Math.PI / 180.0);
+		this.y += (this.speed / fps) * Math.sin(this.vector * Math.PI / 180.0);
+		this.mapPoints();
+
+		// move point over once wrapping is completed
+		if (this.maxY < 0 || this.minY > gameHeight) {
+			this.y = (this.y > 0) ? this.y - gameHeight : gameHeight + this.y;
+		}
+		if (this.maxX < 0 || this.minX > gameWidth) {
+			this.x = (this.x > 0) ? this.x - gameWidth : gameWidth + this.x;
+		}
+
+		this.mapPoints();
+		break;
+	}
+};
