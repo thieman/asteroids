@@ -55,6 +55,12 @@ Arc.prototype.mapPoints = function() {
 	this.maxY = this.y + this.r;
 };
 
+Arc.prototype.moveAlongVector = function(vector, speed, fps) {
+	this.x += (speed / fps) * Math.cos(vector * Math.PI / 180.0);
+	this.y += (speed / fps) * Math.sin(vector * Math.PI / 180.0);
+	this.mapPoints();
+};
+
 Arc.prototype.render = function(canvas) {
 	$(canvas).drawEllipse({
 		x: this.x,
@@ -138,6 +144,61 @@ Line.prototype.handleEvent = function(event, fps) {
 		break;
 	}
 }
+
+Line.prototype.moveAlongVector = function(vector, speed, fps) {
+	for (var i = 0; i < this.points.length; i++) {
+		this.points[i][0] += (speed / fps) *
+			Math.cos(vector * Math.PI / 180.0);
+		this.points[i][1] += (speed / fps) *
+			Math.sin(vector * Math.PI / 180.0);
+	}
+	this.mapPoints();
+};
+
+Line.prototype.wrapAround = function() {
+
+	// move point over once wrapping is completed
+	if (this.maxY < 0 || this.minY > gameHeight) {
+		this.points = _.map(
+			this.points,
+			function(x) {
+				var newY = (x[1] > 0) ? x[1] - gameHeight :
+						gameHeight + x[1];
+				return [x[0], newY];
+			}
+		);
+	}
+	if (this.maxX < 0 || this.minX > gameWidth) {
+		this.points = _.map(
+			this.points,
+			function(x) {
+				var newX = (x[0] > 0) ? x[0] - gameWidth :
+						gameWidth + x[0];
+				return [newX, x[1]];
+			}
+		);
+	}
+	this.mapPoints();
+
+};
+
+Line.prototype.rotate = function(degrees, center) {
+
+	var angle = degrees * Math.PI / 180.0;
+	this.rotation += degrees;
+
+	for (var i = 0; i < this.points.length; i++) {
+		var origX = this.points[i][0] - center[0];
+		var origY = this.points[i][1] - center[1];
+		this.points[i][0] = origX * Math.cos(angle) - origY * Math.sin(angle);
+		this.points[i][1] = origX * Math.sin(angle) + origY * Math.cos(angle);
+		this.points[i][0] += center[0];
+		this.points[i][1] += center[1];
+	}
+
+	this.mapPoints();
+
+};
 
 Line.prototype.render = function(canvas) {
 

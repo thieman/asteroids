@@ -107,12 +107,51 @@ function initGame() {
 		bulletPool.push(new Bullet(0, 0, 10, '#FFF', '#FFF', 0, 1));
 	}
 
-	spawnAsteroids();
+	spawnAsteroids(10);
 
 }
 
 function spawnAsteroids(toSpawn) {
+
+	// spawns the specified number of large asteroids
 	for (var i = 0; i < toSpawn; i++) {
+		var form = large_forms[Math.floor(Math.random() *
+										  large_forms.length)];
+		var edge = Math.floor(Math.random() * 4);
+
+		switch(edge) {
+		case 0:
+			var xOffset = Math.floor(Math.random() * gameWidth);
+			var yOffset = Math.floor(Math.random() * 200);
+			break;
+		case 1:
+			var xOffset = Math.floor(Math.random() * 200);
+			var yOffset = Math.floor(Math.random() * gameHeight);
+			break;
+		case 2:
+			var xOffset = Math.floor(Math.random() * gameWidth);
+			var yOffset = gameHeight - Math.floor(Math.random() * 200);
+			break;
+		case 3:
+			var xOffset = gameWidth - Math.floor(Math.random() * 200);
+			var yOffset = Math.floor(Math.random() * gameHeight);
+			break;
+		}
+
+		var newForm = _.map(form, function(x) {return [x[0] + xOffset,
+													   x[1] + yOffset]; });
+
+		// sprites.push(new Asteroid('#FFF', 1, true,
+		// 						  newForm, 'large',
+		// 						  1, 1, 1, 10000));
+
+		sprites.push(new Asteroid('#FFF', 1.5, true,
+								  newForm, 'large',
+								  Math.random() * 360,
+								  Math.random() * 100,
+								  Math.random() * 360,
+								  Math.random() * 30 + 10));
+
 	}
 }
 

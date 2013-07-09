@@ -1,3 +1,22 @@
+// asteroid initial point arrays based near the origin
+var large_forms = [
+	[
+		[0, 0],
+		[-10, -15],
+		[-35, -2],
+		[-70, -30],
+		[-60, -50],
+		[-27, -50],
+		[-30, -70],
+		[-10, -70],
+		[10, -60],
+		[30, -45],
+		[30, -40],
+		[10, -30],
+		[30, -20]
+	]
+];
+
 function FPSCounter() {
 	TextSprite.apply(this, arguments);
 	this.frames = [];
@@ -77,7 +96,7 @@ function Ship(strokeStyle, strokeWidth, closed, points, maxX, maxY) {
 	this.hyperspaceDelayFrames = 0;
 	this.hyperspaceRechargeFrames = 0;
 
-	this.exhaust = new Line(this.strokeStyle, this.strokeWidth * 0.75, false, [[0, 0]]);
+	this.exhaust = new Line(this.strokeStyle, 0, false, [[0, 0]]);
 }
 
 Ship.prototype = Object.create(Line.prototype);
@@ -89,6 +108,8 @@ Ship.prototype.allowRender = function() {
 Ship.prototype.renderChildren = function(canvas) {
 
 	if (this.exhaust.active === true) {
+
+		this.exhaust.strokeWidth = (Math.random() * 2) + 1;
 
     	this.exhaust.points = [
 			midpoint(this.points[0][0], this.points[0][1],
@@ -116,36 +137,10 @@ Ship.prototype.handleEvent = function(event, fps) {
 
 	case 'nextFrame':
 
-		for (var i = 0; i < this.points.length; i++) {
-			this.points[i][0] += (this.currentSpeed / fps) *
-					Math.cos(this.vector * Math.PI / 180.0);
-			this.points[i][1] += (this.currentSpeed / fps) *
-				Math.sin(this.vector * Math.PI / 180.0);
-		}
-		this.mapPoints();
+		this.moveAlongVector(this.vector, this.currentSpeed,
+							 fps);
 
-		// move point over once wrapping is completed
-		if (this.maxY < 0 || this.minY > gameHeight) {
-			this.points = _.map(
-				this.points,
-				function(x) {
-					var newY = (x[1] > 0) ? x[1] - gameHeight :
-							gameHeight + x[1];
-					return [x[0], newY];
-				}
-			);
-		}
-		if (this.maxX < 0 || this.minX > gameWidth) {
-			this.points = _.map(
-				this.points,
-				function(x) {
-					var newX = (x[0] > 0) ? x[0] - gameWidth :
-							gameWidth + x[0];
-					return [newX, x[1]];
-				}
-			);
-		}
-		this.mapPoints();
+		this.wrapAround();
 
 		this.hyperspaceDelayFrames -= 1;
 		this.hyperspaceRechargeFrames -= 1;
@@ -200,42 +195,14 @@ Ship.prototype.handleEvent = function(event, fps) {
 
 	case 'LEFT_ARROW':
 
-		var rotateDegrees = -360.0 / (fps * this.rotateSpeed);
-		var angle = rotateDegrees * Math.PI / 180.0;
-		this.rotation += rotateDegrees;
-
-		var center = [this.points[3][0], this.points[3][1]];
-
-		for (var i = 0; i < this.points.length; i++) {
-			var origX = this.points[i][0] - center[0];
-			var origY = this.points[i][1] - center[1];
-			this.points[i][0] = origX * Math.cos(angle) - origY * Math.sin(angle);
-			this.points[i][1] = origX * Math.sin(angle) + origY * Math.cos(angle);
-			this.points[i][0] += center[0];
-			this.points[i][1] += center[1];
-		}
-
-		this.mapPoints();
+		this.rotate(-360.0 / (fps * this.rotateSpeed),
+				   	[this.points[3][0], this.points[3][1]]);
 		break;
 
 	case 'RIGHT_ARROW':
 
-		var rotateDegrees = 360.0 / (fps * this.rotateSpeed);
-		var angle = rotateDegrees * Math.PI / 180.0;
-		this.rotation += rotateDegrees;
-
-		var center = [this.points[3][0], this.points[3][1]];
-
-		for (var i = 0; i < this.points.length; i++) {
-			var origX = this.points[i][0] - center[0];
-			var origY = this.points[i][1] - center[1];
-			this.points[i][0] = origX * Math.cos(angle) - origY * Math.sin(angle);
-			this.points[i][1] = origX * Math.sin(angle) + origY * Math.cos(angle);
-			this.points[i][0] += center[0];
-			this.points[i][1] += center[1];
-		}
-
-		this.mapPoints();
+		this.rotate(360.0 / (fps * this.rotateSpeed),
+				   	[this.points[3][0], this.points[3][1]]);
 		break;
 
 	case 'SPACEBAR':
@@ -272,6 +239,7 @@ Bullet.prototype = Object.create(Arc.prototype);
 
 Bullet.prototype.activate = function(x, y, vector, speed, fps) {
 	this.active = true;
+	this.collideType = 'bullet';
 	this.x = x;
 	this.y = y;
 	this.vector = vector;
@@ -297,9 +265,7 @@ Bullet.prototype.handleEvent = function(event, fps) {
 			break;
 		}
 
-		this.x += (this.speed / fps) * Math.cos(this.vector * Math.PI / 180.0);
-		this.y += (this.speed / fps) * Math.sin(this.vector * Math.PI / 180.0);
-		this.mapPoints();
+		this.moveAlongVector(this.vector, this.speed, fps);
 
 		// move point over once wrapping is completed
 		if (this.maxY < 0 || this.minY > gameHeight) {
@@ -311,6 +277,37 @@ Bullet.prototype.handleEvent = function(event, fps) {
 
 		this.mapPoints();
 		this.remainingFrames -= 1;
+		break;
+	}
+};
+
+function Asteroid(strokeStyle, strokeWidth, closed, points, size,
+				  vector, speed, rotation, rotateSpeed) {
+	Line.apply(this, arguments);
+	this.collideType = 'asteroid';
+	this.size = size;
+	this.vector = vector;
+	this.speed = speed;
+	this.rotation = rotation;
+	this.rotateSpeed = rotateSpeed;
+
+	this.rotationDirection = Math.random() <= 0.5 ? -1 : 1;
+}
+
+Asteroid.prototype = Object.create(Line.prototype);
+
+Asteroid.prototype.destruct = function() {
+};
+
+Asteroid.prototype.handleEvent = function(event, fps) {
+	switch(event) {
+	case 'nextFrame':
+
+		this.moveAlongVector(this.vector, this.speed, fps);
+		this.wrapAround();
+		this.rotate(this.rotationDirection * 360.0 / (fps * this.rotateSpeed),
+					[this.points[3][0], this.points[3][1]]);
+
 		break;
 	}
 };
