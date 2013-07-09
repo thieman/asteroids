@@ -114,20 +114,24 @@ Line.prototype.handleEvent = function(event, fps) {
 
 		// move point over once wrapping is completed
 		if (this.maxY < 0 || this.minY > gameHeight) {
-			this.points = _.map(this.points,
-								function(x) {
-									var newY = (x[1] > 0) ? x[1] - gameHeight :
-											gameHeight + x[1];
-									return [x[0], newY];
-								});
+			this.points = _.map(
+				this.points,
+				function(x) {
+					var newY = (x[1] > 0) ? x[1] - gameHeight :
+							gameHeight + x[1];
+					return [x[0], newY];
+				}
+			);
 		}
 		if (this.maxX < 0 || this.minX > gameWidth) {
-			this.points = _.map(this.points,
-								function(x) {
-									var newX = (x[0] > 0) ? x[0] - gameWidth :
-											gameWidth + x[0];
-									return [newX, x[1]];
-								});
+			this.points = _.map(
+				this.points,
+				function(x) {
+					var newX = (x[0] > 0) ? x[0] - gameWidth :
+							gameWidth + x[0];
+					return [newX, x[1]];
+				}
+			);
 		}
 
 		this.mapPoints();
@@ -136,50 +140,74 @@ Line.prototype.handleEvent = function(event, fps) {
 }
 
 Line.prototype.render = function(canvas) {
+
+	if (typeof this.allowRender !== 'undefined') {
+		if (!this.allowRender()) {
+			return;
+		}
+	}
+
 	$(canvas).drawLine(this);
+
 	// handle wrapping along x and y of window
 	if (this.minX < 0) {
-		var wrapped = new Line(this.strokeStyle,
-							   this.strokeWidth,
-							   this.closed,
-							   _.map(this.points,
-									 function(x) {
-										 return [gameWidth + x[0], x[1]];
-									 })
-							  );
+		var wrapped = new Line(
+			this.strokeStyle,
+			this.strokeWidth,
+			this.closed,
+			_.map(
+				this.points,
+				function(x) {
+					return [gameWidth + x[0], x[1]];
+				}
+			)
+		);
 		$(canvas).drawLine(wrapped);
 	}
 	if (this.maxX > gameWidth) {
-		var wrapped = new Line(this.strokeStyle,
-							   this.strokeWidth,
-							   this.closed,
-							   _.map(this.points,
-									 function(x) {
-										 return [x[0] - gameWidth, x[1]];
-									 })
-							  );
+		var wrapped = new Line(
+			this.strokeStyle,
+			this.strokeWidth,
+			this.closed,
+			_.map(
+				this.points,
+				function(x) {
+					return [x[0] - gameWidth, x[1]];
+				}
+			)
+		);
 		$(canvas).drawLine(wrapped);
 	}
 	if (this.minY < 0) {
-		var wrapped = new Line(this.strokeStyle,
-							   this.strokeWidth,
-							   this.closed,
-							   _.map(this.points,
-									 function(x) {
-										 return [x[0], gameHeight + x[1]];
-									 })
-							  );
+		var wrapped = new Line(
+			this.strokeStyle,
+			this.strokeWidth,
+			this.closed,
+			_.map(
+				this.points,
+				function(x) {
+					return [x[0], gameHeight + x[1]];
+				}
+			)
+		);
 		$(canvas).drawLine(wrapped);
 	}
 	if (this.maxY > gameHeight) {
-		var wrapped = new Line(this.strokeStyle,
-							   this.strokeWidth,
-							   this.closed,
-							   _.map(this.points,
-									 function(x) {
-										 return [x[0], x[1] - gameHeight];
-									 })
-							  );
+		var wrapped = new Line(
+			this.strokeStyle,
+			this.strokeWidth,
+			this.closed,
+			_.map(
+				this.points,
+				function(x) {
+					return [x[0], x[1] - gameHeight];
+				}
+			)
+		);
 		$(canvas).drawLine(wrapped);
+	}
+
+	if (typeof this.renderChildren !== 'undefined') {
+		this.renderChildren(canvas);
 	}
 };

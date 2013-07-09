@@ -1,8 +1,10 @@
 var GAME_FPS = 60;
-var frameNumber = 0;
+var debug = true;
 var lastRender = 0;
 var events = [];
 var sprites = [];
+var bulletPool = [];
+var maximumBullets = 6;
 var gameWindow = null;
 var activeKeys = [];
 
@@ -19,6 +21,8 @@ var keysMap = {
 	13: 'ENTER',
 	32: 'SPACEBAR'
 };
+
+var pushKeys = ['ENTER', 'SPACEBAR', 'DOWN_ARROW'];
 
 $(document).ready(function() {
 
@@ -50,17 +54,21 @@ function mainLoop() {
 		}
 	}
 
-	// collision detection here which adds new events
+	// deactivate keys that have to be manually pushed each time
+	activeKeys = _.reject(activeKeys, function(x) {
+		return _.contains(pushKeys, keysMap[x]);
+	});
+
+	// collision detection here which adds new collision events
 
 	for (var i = 0; i < events.length; i++) {
 		var event = events[i];
-		// do stuff with each event
+		// handle each collision event
 	}
 
 	events = [];
 
 	$(gameWindow).clearCanvas();
-	frameNumber += 1;
 
 	for (var i = 0; i < sprites.length; i++) {
 		sprites[i].render(gameWindow);
@@ -84,14 +92,28 @@ function initGame() {
 	canvas.height = gameHeight;
 
 	sprites.push(new Background(0, 0, gameWidth, gameHeight));
-	sprites.push(new FPSCounter(gameWidth, 12, 0, '#FFF'));
-	sprites.push(new FrameCounter(gameWidth, 30, 0, '#FFF'));
+	if (debug) {
+		sprites.push(new FPSCounter(gameWidth, 12, 0, '#FFF'));
+		sprites.push(new FrameCounter(gameWidth, 30, 0, '#FFF'));
+	}
 	sprites.push(new Ship('#FFF', 2, true,
 						  [[midWidth - 7, midHeight + 12],
 						   [midWidth, midHeight - 8],
 						   [midWidth + 7, midHeight + 12],
-						   [midWidth, midHeight + 8]]));
+						   [midWidth, midHeight + 8]],
+						 gameWidth, gameHeight));
 
+	for (var i = 0; i < maximumBullets; i++) {
+		bulletPool.push(new Bullet(0, 0, 10, '#FFF', '#FFF', 0, 1));
+	}
+
+	spawnAsteroids();
+
+}
+
+function spawnAsteroids(toSpawn) {
+	for (var i = 0; i < toSpawn; i++) {
+	}
 }
 
 function fpsClock(fps, callback) {
@@ -104,13 +126,19 @@ function fpsClock(fps, callback) {
 }
 
 function onKeyDown(keycode) {
+	console.log(keycode);
 	if (!(_.contains(activeKeys, keycode))) {
-		activeKeys.push(keycode);
+		if (!_.contains(activeKeys, -1 * keycode)) {
+			if (_.contains(pushKeys, keysMap[keycode])) {
+				activeKeys.push(-1 * keycode);
+			}
+			activeKeys.push(keycode);
+		}
 	}
 }
 
 function onKeyUp(keycode) {
-	if (_.contains(activeKeys, keycode)) {
-		activeKeys = _.filter(activeKeys, function(x) { return (x !== keycode); });
+	if (_.contains(activeKeys, keycode) || _.contains(activeKeys, -1 * keycode)) {
+		activeKeys = _.filter(activeKeys, function(x) { return (Math.abs(x) !== keycode); });
 	}
 }
