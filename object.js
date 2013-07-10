@@ -92,6 +92,7 @@ function Ship(strokeStyle, strokeWidth, closed, points, maxX, maxY) {
 	Line.apply(this, arguments);
 
 	this.active = true;
+	this.collideType = 'ship';
 
 	this.rotation = 270; // direction ship is pointing in degrees
 	this.vector = 0; // direction of ship's movement in degrees
@@ -105,11 +106,13 @@ function Ship(strokeStyle, strokeWidth, closed, points, maxX, maxY) {
 	this.maxX = maxX;
 	this.maxY = maxY;
 	this.hyperspaceDelaySeconds = 0.6; // how long it takes to rematerialize
-	this.hyperspaceRechargeSeconds = 2.0; // minimum seconds between using hyperspace
+	this.hyperspaceRechargeSeconds = 1.2; // minimum seconds between using hyperspace
 	this.hyperspaceDelayFrames = 0;
 	this.hyperspaceRechargeFrames = 0;
 
 	this.exhaust = new Line(this.strokeStyle, 0, false, [[0, 0]]);
+	this.exhaustSfxDelaySeconds = 0.05;
+	this.exhaustSfxDelayFrames = 0;
 }
 
 Ship.prototype = Object.create(Line.prototype);
@@ -121,9 +124,6 @@ Ship.prototype.allowRender = function() {
 Ship.prototype.renderChildren = function(canvas) {
 
 	if (this.exhaust.active === true) {
-
-		var sfx = new Audio('thrust.wav');
-		sfx.play();
 
 		this.exhaust.strokeWidth = (Math.random() * 2) + 1;
 
@@ -153,13 +153,12 @@ Ship.prototype.handleEvent = function(event, fps) {
 
 	case 'nextFrame':
 
-		this.moveAlongVector(this.vector, this.currentSpeed,
-							 fps);
-
+		this.moveAlongVector(this.vector, this.currentSpeed, fps);
 		this.wrapAround();
 
 		this.hyperspaceDelayFrames -= 1;
 		this.hyperspaceRechargeFrames -= 1;
+		this.exhaustSfxDelayFrames -= 1;
 
 		if (this.hyperspaceDelayFrames === 0) {
 			this.active = true;
@@ -185,6 +184,12 @@ Ship.prototype.handleEvent = function(event, fps) {
 		this.currentSpeed = Math.min(this.currentSpeed, this.topSpeed);
 
 		this.exhaust.active = true;
+
+		if (this.exhaustSfxDelayFrames <= 0) {
+			var sfx = new Audio('thrust.wav');
+			sfx.play();
+			this.exhaustSfxDelayFrames = this.exhaustSfxDelaySeconds * fps;
+		}
 
 		break;
 
@@ -317,6 +322,7 @@ function Asteroid(strokeStyle, strokeWidth, closed, points, size,
 Asteroid.prototype = Object.create(Line.prototype);
 
 Asteroid.prototype.destruct = function() {
+
 	sprites = _.without(sprites, this);
 	if (this.size === 'small') {
 		return;
@@ -341,6 +347,7 @@ Asteroid.prototype.destruct = function() {
 								  this.rotateSpeed * ((Math.random() + 1) / 2)));
 
 	}, this);
+
 };
 
 Asteroid.prototype.handleEvent = function(event, fps) {

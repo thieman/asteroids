@@ -64,7 +64,8 @@ function mainLoop() {
 		return _.contains(pushKeys, keysMap[x]);
 	});
 
-	// collision detection here which adds new collision events
+	checkCollisions(sprites, events, 'bullet', 'asteroid');
+	checkCollisions(sprites, events, 'asteroid', 'ship');
 
 	for (var i = 0; i < events.length; i++) {
 		var event = events[i];
@@ -98,10 +99,12 @@ function initGame() {
 	canvas.height = gameHeight;
 
 	sprites.push(new Background(0, 0, gameWidth, gameHeight));
+
 	if (debug) {
 		sprites.push(new FPSCounter(gameWidth, 12, 0, '#FFF'));
 		sprites.push(new FrameCounter(gameWidth, 30, 0, '#FFF'));
 	}
+
 	sprites.push(new Ship('#FFF', 2, true,
 						  [[midWidth - 7, midHeight + 12],
 						   [midWidth, midHeight - 8],
@@ -113,7 +116,7 @@ function initGame() {
 		bulletPool.push(new Bullet(0, 0, 10, '#FFF', '#FFF', 0, 1));
 	}
 
-	spawnAsteroids(10);
+	spawnAsteroids(7);
 
 }
 
