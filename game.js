@@ -1,5 +1,8 @@
+var animateAsteroids = true;
+
 var GAME_FPS = 60;
-var debug = true;
+var frameNumber = 0;
+var debug = false;
 var lastRender = 0;
 var events = [];
 var sprites = [];
@@ -42,6 +45,8 @@ function mainLoop() {
 
 	lastRender = new Date().getTime();
 
+	playBackgroundAudio();
+
 	// push user input and animate events to every sprite
 	for (var i = 0; i < sprites.length; i++) {
 		if (typeof sprites[i].handleEvent === 'function') {
@@ -74,6 +79,7 @@ function mainLoop() {
 		sprites[i].render(gameWindow);
 	}
 
+	frameNumber += 1;
 	fpsClock(GAME_FPS, mainLoop);
 
 }
@@ -115,8 +121,8 @@ function spawnAsteroids(toSpawn) {
 
 	// spawns the specified number of large asteroids
 	for (var i = 0; i < toSpawn; i++) {
-		var form = large_forms[Math.floor(Math.random() *
-										  large_forms.length)];
+		var form = largeForms[Math.floor(Math.random() *
+										 largeForms.length)];
 		var edge = Math.floor(Math.random() * 4);
 
 		switch(edge) {
@@ -141,17 +147,31 @@ function spawnAsteroids(toSpawn) {
 		var newForm = _.map(form, function(x) {return [x[0] + xOffset,
 													   x[1] + yOffset]; });
 
-		// sprites.push(new Asteroid('#FFF', 1, true,
-		// 						  newForm, 'large',
-		// 						  1, 1, 1, 10000));
+		if (animateAsteroids) {
+			sprites.push(new Asteroid('#FFF', 1.5, true,
+									  newForm, 'large',
+									  Math.random() * 360,
+									  Math.random() * 100,
+									  Math.random() * 360,
+									  Math.random() * 30 + 10));
+		} else {
+			sprites.push(new Asteroid('#FFF', 1.5, true,
+									  newForm, 'large',
+									  1, 1, 1, 10000));
+		}
 
-		sprites.push(new Asteroid('#FFF', 1.5, true,
-								  newForm, 'large',
-								  Math.random() * 360,
-								  Math.random() * 100,
-								  Math.random() * 360,
-								  Math.random() * 30 + 10));
+	}
+}
 
+function playBackgroundAudio() {
+	return;
+	if (frameNumber % (GAME_FPS * 2) === 0) {
+		var sfx = new Audio('tonelo.wav');
+		sfx.play();
+	}
+	else if (frameNumber % GAME_FPS === 0) {
+		var sfx = new Audio('tonehi.wav');
+		sfx.play();
 	}
 }
 

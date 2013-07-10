@@ -1,21 +1,34 @@
 // asteroid initial point arrays based near the origin
-var large_forms = [
+var asteroidForms = [
 	[
 		[0, 0],
-		[-10, -15],
+		[-12.5, -15],
 		[-35, -2],
 		[-70, -30],
-		[-60, -50],
-		[-27, -50],
-		[-30, -70],
-		[-10, -70],
-		[10, -60],
+		[-60, -70],
+		[-27, -70],
+		[-30, -90],
+		[5, -90],
+		[25, -70],
 		[30, -45],
 		[30, -40],
 		[10, -30],
 		[30, -20]
 	]
 ];
+
+function morphForms(multiplier) {
+	return _.map(asteroidForms,
+				 function(x) {
+					 return _.map(asteroidForms[0],
+								  function(y) { return [y[0] * multiplier,
+														y[1] * multiplier]; });
+				 });
+}
+
+var largeForms = morphForms(1.25);
+var mediumForms = morphForms(0.75);
+var smallForms = morphForms(0.25);
 
 function FPSCounter() {
 	TextSprite.apply(this, arguments);
@@ -83,10 +96,10 @@ function Ship(strokeStyle, strokeWidth, closed, points, maxX, maxY) {
 	this.rotation = 270; // direction ship is pointing in degrees
 	this.vector = 0; // direction of ship's movement in degrees
 	this.currentSpeed = 0; // current speed in pixels per second
-	this.topSpeed = 500; // top speed in pixels per second
+	this.topSpeed = 300; // top speed in pixels per second
 	this.bulletSpeed = 600; // bullet speed in pixels per second
 	this.acceleration = 2.0; // seconds to reach max speed, linear accel
-	this.rotateSpeed = 2; // total seconds to do a 360
+	this.rotateSpeed = 2.0; // total seconds to do a 360
 
 	// hyperspace stuff
 	this.maxX = maxX;
@@ -108,6 +121,9 @@ Ship.prototype.allowRender = function() {
 Ship.prototype.renderChildren = function(canvas) {
 
 	if (this.exhaust.active === true) {
+
+		var sfx = new Audio('thrust.wav');
+		sfx.play();
 
 		this.exhaust.strokeWidth = (Math.random() * 2) + 1;
 
@@ -221,6 +237,10 @@ Ship.prototype.handleEvent = function(event, fps) {
 					fps
 				);
 				sprites.push(bullet);
+
+				var sfx = new Audio('shoot.wav');
+				sfx.play();
+
 				break;
 			}
 		}
@@ -297,6 +317,30 @@ function Asteroid(strokeStyle, strokeWidth, closed, points, size,
 Asteroid.prototype = Object.create(Line.prototype);
 
 Asteroid.prototype.destruct = function() {
+	sprites = _.without(sprites, this);
+	if (this.size === 'small') {
+		return;
+	}
+
+	var nextSize = this.size === 'large' ? 'medium' : 'small';
+	var nextForms = nextSize === 'medium' ? mediumForms : smallForms;
+
+	_.times(2, function(n) {
+
+		var thisForm = nextForms[Math.floor(Math.random() * nextForms.length)];
+		var xOffset = Math.random() * 10;
+		var yOffset = Math.random() * 10;
+		var newForm = _.map(thisForm, function(x) { return [x[0] + xOffset,
+															x[1] + yOffset]; });
+
+		sprites.push(new Asteroid('#FFF', 1.5, true,
+								  newForm, nextSize,
+								  Math.random() * 360,
+								  this.speed * (Math.random() + 1),
+								  Math.random() * 360,
+								  this.rotateSpeed * ((Math.random() + 1) / 2)));
+
+	}, this);
 };
 
 Asteroid.prototype.handleEvent = function(event, fps) {
