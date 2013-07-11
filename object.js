@@ -91,16 +91,10 @@ FrameCounter.prototype.render = function(canvas) {
 function Ship(strokeStyle, strokeWidth, closed, points, maxX, maxY) {
 	Line.apply(this, arguments);
 
-	this.active = true;
+	this.initialPoints = _.map(points, function(x) { return _.clone(x); });
 	this.collideType = 'ship';
 
-	this.rotation = 270; // direction ship is pointing in degrees
-	this.vector = 0; // direction of ship's movement in degrees
-	this.currentSpeed = 0; // current speed in pixels per second
-	this.topSpeed = 300; // top speed in pixels per second
-	this.bulletSpeed = 600; // bullet speed in pixels per second
-	this.acceleration = 2.0; // seconds to reach max speed, linear accel
-	this.rotateSpeed = 2.0; // total seconds to do a 360
+	this.reset();
 
 	// hyperspace stuff
 	this.maxX = maxX;
@@ -116,6 +110,24 @@ function Ship(strokeStyle, strokeWidth, closed, points, maxX, maxY) {
 }
 
 Ship.prototype = Object.create(Line.prototype);
+
+Ship.prototype.reset = function() {
+	this.active = true;
+	this.points = _.map(this.initialPoints, function(x) { return _.clone(x); });
+	this.rotation = 270; // direction ship is pointing in degrees
+	this.vector = 0; // direction of ship's movement in degrees
+	this.currentSpeed = 0; // current speed in pixels per second
+	this.topSpeed = 300; // top speed in pixels per second
+	this.bulletSpeed = 600; // bullet speed in pixels per second
+	this.acceleration = 2.0; // seconds to reach max speed, linear accel
+	this.rotateSpeed = 2.0; // total seconds to do a 360
+	this.mapPoints();
+};
+
+Ship.prototype.destruct = function() {
+	sprites = _.without(sprites, this);
+	this.active = false;
+};
 
 Ship.prototype.allowRender = function() {
 	return this.active ? true : false;
@@ -164,6 +176,11 @@ Ship.prototype.handleEvent = function(event, fps) {
 			this.active = true;
 		}
 
+		break;
+
+	case 'collision':
+
+		this.destruct();
 		break;
 
 	case 'UP_ARROW':
@@ -303,6 +320,9 @@ Bullet.prototype.handleEvent = function(event, fps) {
 		this.mapPoints();
 		this.remainingFrames -= 1;
 		break;
+
+	case 'collision':
+		this.destruct();
 	}
 };
 
@@ -323,6 +343,9 @@ Asteroid.prototype = Object.create(Line.prototype);
 
 Asteroid.prototype.destruct = function() {
 
+	var sfx = new Audio('explosion.wav');
+	sfx.play();
+
 	sprites = _.without(sprites, this);
 	if (this.size === 'small') {
 		return;
@@ -334,10 +357,14 @@ Asteroid.prototype.destruct = function() {
 	_.times(2, function(n) {
 
 		var thisForm = nextForms[Math.floor(Math.random() * nextForms.length)];
-		var xOffset = Math.random() * 10;
-		var yOffset = Math.random() * 10;
-		var newForm = _.map(thisForm, function(x) { return [x[0] + xOffset,
-															x[1] + yOffset]; });
+		var xOffset = Math.random() * 50;
+		var yOffset = Math.random() * 50;
+		var centerPoint = this.points[Math.ceil(this.points.length / 2)];
+		var center = midpoint(this.points[0][0], this.points[0][1],
+							  centerPoint[0], centerPoint[1]);
+
+		var newForm = _.map(thisForm, function(x) { return [x[0] + center[0] + xOffset,
+															x[1] + center[1] + yOffset]; });
 
 		sprites.push(new Asteroid('#FFF', 1.5, true,
 								  newForm, nextSize,
@@ -352,6 +379,7 @@ Asteroid.prototype.destruct = function() {
 
 Asteroid.prototype.handleEvent = function(event, fps) {
 	switch(event) {
+
 	case 'nextFrame':
 
 		this.moveAlongVector(this.vector, this.speed, fps);
@@ -360,6 +388,11 @@ Asteroid.prototype.handleEvent = function(event, fps) {
 					[this.points[3][0], this.points[3][1]]);
 
 		break;
+
+	case 'collision':
+		this.destruct();
+		break;
+
 	}
 };
 

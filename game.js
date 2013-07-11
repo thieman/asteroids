@@ -1,8 +1,7 @@
-var animateAsteroids = true;
-
 var GAME_FPS = 60;
 var frameNumber = 0;
 var debug = false;
+var animateAsteroids = true;
 var lastRender = 0;
 var events = [];
 var sprites = [];
@@ -10,6 +9,10 @@ var bulletPool = [];
 var maximumBullets = 6;
 var gameWindow = null;
 var activeKeys = [];
+
+var shipStartPosition = [];
+var currentLevelAsteroidCount = 7;
+var incLevelAsteroidCount = 2;
 
 var gameWidth = 0;
 var gameHeight = 0;
@@ -29,21 +32,38 @@ var pushKeys = ['ENTER', 'SPACEBAR', 'DOWN_ARROW'];
 
 $(document).ready(function() {
 
-	$(document).bind('keydown', function(e) {
-		onKeyDown(e.which);
-	});
-	$(document).bind('keyup', function(e) {
-		onKeyUp(e.which);
-	});
+	// timing hack to fix Chrome fucking up innerHeight
+	// when coming from the Chrome homepage
+	setTimeout(function() {
+		$(document).bind('keydown', function(e) {
+			onKeyDown(e.which);
+		});
+		$(document).bind('keyup', function(e) {
+			onKeyUp(e.which);
+		});
 
-	initGame();
-	mainLoop();
+		initGame();
+		mainLoop();
+	}, 10);
 
 });
 
 function mainLoop() {
 
 	lastRender = new Date().getTime();
+
+	// check for win to start next level
+	if (!_.some(sprites, function(x) { return (x.collideType === 'asteroid'); })) {
+		_.each(sprites, function(sprite) {
+			if (sprite.collideType === 'ship') {
+				sprite.reset();
+			} else if (sprite.collideType === 'bullet') {
+				sprite.destruct();
+			}
+		});
+		currentLevelAsteroidCount += incLevelAsteroidCount;
+		spawnAsteroids(currentLevelAsteroidCount);
+	}
 
 	playBackgroundAudio();
 
@@ -64,18 +84,17 @@ function mainLoop() {
 		return _.contains(pushKeys, keysMap[x]);
 	});
 
-	checkCollisions(sprites, events, 'bullet', 'asteroid');
-	checkCollisions(sprites, events, 'asteroid', 'ship');
-
-	for (var i = 0; i < events.length; i++) {
-		var event = events[i];
-		// handle each collision event
+	// collision detection
+	var collisions = [];
+	checkCollisions(sprites, collisions, GAME_FPS, 'bullet', 'asteroid');
+	checkCollisions(sprites, collisions, GAME_FPS, 'ship', 'asteroid');
+	for (var i = 0; i < collisions.length; i++) {
+		collisions[i].handleEvent('collision');
 	}
+	collisions = [];
 
-	events = [];
-
+	// rerender
 	$(gameWindow).clearCanvas();
-
 	for (var i = 0; i < sprites.length; i++) {
 		sprites[i].render(gameWindow);
 	}
@@ -110,13 +129,13 @@ function initGame() {
 						   [midWidth, midHeight - 8],
 						   [midWidth + 7, midHeight + 12],
 						   [midWidth, midHeight + 8]],
-						 gameWidth, gameHeight));
+						  gameWidth, gameHeight));
 
 	for (var i = 0; i < maximumBullets; i++) {
-		bulletPool.push(new Bullet(0, 0, 10, '#FFF', '#FFF', 0, 1));
+		bulletPool.push(new Bullet(0, 0, 10, '#FFF', '#FFF', 0, 1.5));
 	}
 
-	spawnAsteroids(7);
+	spawnAsteroids(currentLevelAsteroidCount);
 
 }
 
@@ -188,7 +207,6 @@ function fpsClock(fps, callback) {
 }
 
 function onKeyDown(keycode) {
-	console.log(keycode);
 	if (!(_.contains(activeKeys, keycode))) {
 		if (!_.contains(activeKeys, -1 * keycode)) {
 			if (_.contains(pushKeys, keysMap[keycode])) {

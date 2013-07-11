@@ -200,6 +200,41 @@ Line.prototype.rotate = function(degrees, center) {
 
 };
 
+Line.prototype.wrappedPoints = function() {
+
+	// return an array of points to be rendered when object
+	// needs to wrap around one of the game edges
+	var wrapped = [];
+
+	// handle wrapping along x and y of window
+	if (this.minX < 0) {
+		wrapped.push(_.map(this.points, function(x) {
+			return [gameWidth + x[0], x[1]];
+		}));
+	}
+
+	if (this.maxX > gameWidth) {
+		wrapped.push(_.map(this.points,function(x) {
+			return [x[0] - gameWidth, x[1]];
+		}));
+	}
+
+	if (this.minY < 0) {
+		wrapped.push(_.map(this.points,function(x) {
+			return [x[0], gameHeight + x[1]];
+		}));
+	}
+
+	if (this.maxY > gameHeight) {
+		wrapped.push(_.map(this.points,function(x) {
+			return [x[0], x[1] - gameHeight];
+		}));
+	}
+
+	return wrapped;
+
+};
+
 Line.prototype.render = function(canvas) {
 
 	if (typeof this.allowRender !== 'undefined') {
@@ -210,63 +245,15 @@ Line.prototype.render = function(canvas) {
 
 	$(canvas).drawLine(this);
 
-	// handle wrapping along x and y of window
-	if (this.minX < 0) {
+	_.each(this.wrappedPoints(), function(points) {
 		var wrapped = new Line(
 			this.strokeStyle,
 			this.strokeWidth,
 			this.closed,
-			_.map(
-				this.points,
-				function(x) {
-					return [gameWidth + x[0], x[1]];
-				}
-			)
+			points
 		);
 		$(canvas).drawLine(wrapped);
-	}
-	if (this.maxX > gameWidth) {
-		var wrapped = new Line(
-			this.strokeStyle,
-			this.strokeWidth,
-			this.closed,
-			_.map(
-				this.points,
-				function(x) {
-					return [x[0] - gameWidth, x[1]];
-				}
-			)
-		);
-		$(canvas).drawLine(wrapped);
-	}
-	if (this.minY < 0) {
-		var wrapped = new Line(
-			this.strokeStyle,
-			this.strokeWidth,
-			this.closed,
-			_.map(
-				this.points,
-				function(x) {
-					return [x[0], gameHeight + x[1]];
-				}
-			)
-		);
-		$(canvas).drawLine(wrapped);
-	}
-	if (this.maxY > gameHeight) {
-		var wrapped = new Line(
-			this.strokeStyle,
-			this.strokeWidth,
-			this.closed,
-			_.map(
-				this.points,
-				function(x) {
-					return [x[0], x[1] - gameHeight];
-				}
-			)
-		);
-		$(canvas).drawLine(wrapped);
-	}
+	}, this);
 
 	if (typeof this.renderChildren !== 'undefined') {
 		this.renderChildren(canvas);
