@@ -3,6 +3,7 @@ var frameNumber = 0;
 var debug = false;
 var animateAsteroids = true;
 var lastRender = 0;
+var playerScore = 0;
 var events = [];
 var sprites = [];
 var bulletPool = [];
@@ -118,10 +119,11 @@ function initGame() {
 	canvas.height = gameHeight;
 
 	sprites.push(new Background(0, 0, gameWidth, gameHeight));
+	sprites.push(new ScoreCounter(gameWidth, 30, 0, '#FFF'));
 
 	if (debug) {
-		sprites.push(new FPSCounter(gameWidth, 12, 0, '#FFF'));
-		sprites.push(new FrameCounter(gameWidth, 30, 0, '#FFF'));
+		sprites.push(new FPSCounter(gameWidth, gameHeight - 30, 0, '#FFF'));
+		sprites.push(new FrameCounter(gameWidth, gameHeight - 12, 0, '#FFF'));
 	}
 
 	sprites.push(new Ship('#FFF', 2, true,
@@ -137,6 +139,10 @@ function initGame() {
 
 	spawnAsteroids(currentLevelAsteroidCount);
 
+}
+
+function gameOver() {
+	sprites.push(new CenterMessage(midWidth, midHeight, 'YOU ARE KILLED BY SPACE ROCKS\nEVERYBODY YOU LOVE DIES', '#FFF'));
 }
 
 function spawnAsteroids(toSpawn) {

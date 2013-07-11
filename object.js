@@ -30,6 +30,48 @@ var largeForms = morphForms(1.25);
 var mediumForms = morphForms(0.75);
 var smallForms = morphForms(0.25);
 
+function ScoreCounter() {
+	TextSprite.apply(this, arguments);
+}
+ScoreCounter.prototype = Object.create(TextSprite.prototype);
+
+ScoreCounter.prototype.handleEvent = function(event, fps) {
+	switch(event) {
+	case 'nextFrame':
+		this.text = playerScore;
+		break;
+	}
+};
+
+ScoreCounter.prototype.render = function(canvas) {
+	$(canvas).drawText({
+		text: this.text,
+		align: 'right',
+		respectAlign: true,
+		x: this.x,
+		y: this.y,
+		fillStyle: this.fillStyle,
+		fontFamily: 'Wire One, sans-serif',
+		fontSize: 60
+	});
+};
+
+function CenterMessage() {
+	TextSprite.apply(this, arguments);
+}
+CenterMessage.prototype = Object.create(TextSprite.prototype);
+
+CenterMessage.prototype.render = function(canvas) {
+	$(canvas).drawText({
+		text: this.text,
+		x: this.x,
+		y: this.y,
+		fillStyle: this.fillStyle,
+		fontFamily: 'Wire One, sans-serif',
+		fontSize: 140
+	});
+};
+
 function FPSCounter() {
 	TextSprite.apply(this, arguments);
 	this.frames = [];
@@ -127,6 +169,7 @@ Ship.prototype.reset = function() {
 Ship.prototype.destruct = function() {
 	sprites = _.without(sprites, this);
 	this.active = false;
+	gameOver();
 };
 
 Ship.prototype.allowRender = function() {
@@ -323,6 +366,7 @@ Bullet.prototype.handleEvent = function(event, fps) {
 
 	case 'collision':
 		this.destruct();
+		break;
 	}
 };
 
@@ -369,7 +413,7 @@ Asteroid.prototype.destruct = function() {
 		sprites.push(new Asteroid('#FFF', 1.5, true,
 								  newForm, nextSize,
 								  Math.random() * 360,
-								  this.speed * (Math.random() + 1),
+								  Math.max(100, this.speed * (Math.random() + 1)),
 								  Math.random() * 360,
 								  this.rotateSpeed * ((Math.random() + 1) / 2)));
 
@@ -390,6 +434,7 @@ Asteroid.prototype.handleEvent = function(event, fps) {
 		break;
 
 	case 'collision':
+		playerScore += this.size === 'large' ? 25 : this.size === 'medium' ? 50 : 100;
 		this.destruct();
 		break;
 
