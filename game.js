@@ -192,7 +192,6 @@ function spawnAsteroids(toSpawn) {
 }
 
 function playBackgroundAudio() {
-	return;
 	if (frameNumber % (GAME_FPS * 2) === 0) {
 		var sfx = new Audio('tonelo.wav');
 		sfx.play();
